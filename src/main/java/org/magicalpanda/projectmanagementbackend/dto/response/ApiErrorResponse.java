@@ -1,4 +1,4 @@
-package org.magicalpanda.projectmanagementbackend.dto;
+package org.magicalpanda.projectmanagementbackend.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;

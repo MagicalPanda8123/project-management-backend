@@ -35,6 +35,7 @@ public class VerificationCode {
     private User user;
 
     @Column(name = "is_used")
+    @Setter
     private boolean isUsed;
 
     @Column(name = "expires_at", nullable = false)

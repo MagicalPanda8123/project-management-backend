@@ -42,6 +42,7 @@ public class User {
     private String passwordHash;
 
     @Column(name = "is_email_verified")
+    @Setter
     private boolean isEmailVerified;
 
     @Column(nullable = false)
