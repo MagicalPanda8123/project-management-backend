@@ -53,7 +53,7 @@ public class JwtService {
 
     // validate access token
     public void validateAccessToken(String token) {
-        String tokenType = extractClaim(token, (claims) -> claims.get("role").toString());
+        String tokenType = extractClaim(token, (claims) -> claims.get("token_type").toString());
 
         if (!TokenType.ACCESS_TOKEN.name().equals(tokenType)) {
             throw new JwtException("Invalid token type: " + tokenType);
