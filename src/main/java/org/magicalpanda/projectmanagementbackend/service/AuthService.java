@@ -1,8 +1,10 @@
 package org.magicalpanda.projectmanagementbackend.service;
 
 import lombok.RequiredArgsConstructor;
+import org.magicalpanda.projectmanagementbackend.dto.request.LoginRequest;
 import org.magicalpanda.projectmanagementbackend.dto.request.RegisterRequest;
 import org.magicalpanda.projectmanagementbackend.dto.request.VerifyEmailRequest;
+import org.magicalpanda.projectmanagementbackend.dto.response.LoginResponse;
 import org.magicalpanda.projectmanagementbackend.exception.ResourceAlreadyExistsException;
 import org.magicalpanda.projectmanagementbackend.exception.ResourceNotFoundException;
 import org.magicalpanda.projectmanagementbackend.exception.VerificationCodeException;
@@ -13,6 +15,11 @@ import org.magicalpanda.projectmanagementbackend.model.enumeration.VerificationP
 import org.magicalpanda.projectmanagementbackend.proxy.EmailProxy;
 import org.magicalpanda.projectmanagementbackend.repository.UserRepository;
 import org.magicalpanda.projectmanagementbackend.repository.VerificationCodeRepository;
+import org.magicalpanda.projectmanagementbackend.security.jwt.JwtService;
+import org.magicalpanda.projectmanagementbackend.security.user.SecurityUser;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,7 +35,9 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final VerificationCodeRepository verificationCodeRepository;
+    private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
     private final EmailProxy emailProxy;
 
     public User register(RegisterRequest request){
@@ -104,6 +113,30 @@ public class AuthService {
 
         userRepository.save(user);
         verificationCodeRepository.save(code);
+    }
+
+    public LoginResponse login(LoginRequest request) {
+
+        // 1. Delegate authentication to Spring Security
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.getUsername(),
+                        request.getPassword()
+                )
+        );
+
+        // 2. Authentication succeeded -> extract principal
+        SecurityUser principal = (SecurityUser) authentication.getPrincipal();
+
+        // 3. Issue tokens
+        String accessToken = jwtService.generateAccessToken(principal);
+
+        // Refresh token will be implemented later </3
+
+        return LoginResponse.builder()
+                .accessToken(accessToken)
+                .build();
+
     }
 
     /**

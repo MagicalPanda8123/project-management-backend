@@ -2,8 +2,10 @@ package org.magicalpanda.projectmanagementbackend.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.magicalpanda.projectmanagementbackend.dto.request.LoginRequest;
 import org.magicalpanda.projectmanagementbackend.dto.request.RegisterRequest;
 import org.magicalpanda.projectmanagementbackend.dto.request.VerifyEmailRequest;
+import org.magicalpanda.projectmanagementbackend.dto.response.LoginResponse;
 import org.magicalpanda.projectmanagementbackend.dto.response.RegisterResponse;
 import org.magicalpanda.projectmanagementbackend.model.User;
 import org.magicalpanda.projectmanagementbackend.service.AuthService;
@@ -38,5 +40,13 @@ public class AuthController {
     ) {
         authService.verifyEmail(request);
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(
+            @Valid @RequestBody LoginRequest request
+    ) {
+        LoginResponse response = authService.login(request);
+        return ResponseEntity.ok(response);
     }
 }
