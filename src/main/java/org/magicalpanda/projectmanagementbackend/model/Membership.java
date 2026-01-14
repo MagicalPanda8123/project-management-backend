@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.magicalpanda.projectmanagementbackend.model.enumeration.MembershipStatus;
 import org.magicalpanda.projectmanagementbackend.model.enumeration.ProjectRole;
 
 import java.time.Instant;
@@ -36,6 +37,10 @@ public class Membership {
 
     @Enumerated(EnumType.STRING)
     private ProjectRole role;
+
+    @Column(name = "status")
+    @Enumerated(EnumType.STRING)
+    private MembershipStatus status;
 
     @Column(name = "joined_at")
     private Instant JoinedAt;
