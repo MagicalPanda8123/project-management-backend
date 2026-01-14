@@ -6,11 +6,9 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.magicalpanda.projectmanagementbackend.model.enumeration.Role;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Entity
 @Table(name = "users")
@@ -42,6 +40,7 @@ public class User {
     private String passwordHash;
 
     @Column(name = "is_email_verified")
+    @Setter
     private boolean isEmailVerified;
 
     @Column(nullable = false)
@@ -68,10 +67,10 @@ public class User {
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @UpdateTimestamp
     @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
 }

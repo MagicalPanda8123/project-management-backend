@@ -6,7 +6,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.magicalpanda.projectmanagementbackend.model.enumeration.VerificationPurpose;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Random;
 
 @Entity
@@ -35,16 +35,17 @@ public class VerificationCode {
     private User user;
 
     @Column(name = "is_used")
+    @Setter
     private boolean isUsed;
 
     @Column(name = "expires_at", nullable = false)
-    private LocalDateTime expiresAt;
+    private Instant expiresAt;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @UpdateTimestamp
     @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 }

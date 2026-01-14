@@ -12,7 +12,7 @@ spring:
     open-in-view: false
     show-sql: true
     hibernate:
-      ddl-auto: ${HIBERNATE_DDL_AUTO:create}
+      ddl-auto: ${HIBERNATE_DDL_AUTO:update}
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
@@ -23,6 +23,24 @@ spring:
   sql:
     init:
       mode: never
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${GMAIL_ADDRESS}
+    password: ${GMAIL_APP_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  security:
+    jwt:
+      secret: ${JWT_SECRET}
+      access-token-expiration: 900 # seconds (15 min)
+      refresh-token-expiration: 604800 # seconds (7 days)
 
 server:
   port: ${SERVER_PORT:8080}

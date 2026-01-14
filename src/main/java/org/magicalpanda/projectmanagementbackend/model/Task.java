@@ -7,7 +7,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.magicalpanda.projectmanagementbackend.model.enumeration.TaskPriority;
 import org.magicalpanda.projectmanagementbackend.model.enumeration.TaskStatus;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,7 +32,7 @@ public class Task {
     private String description;
 
     @Column(name = "due_date")
-    private LocalDateTime dueDate;
+    private Instant dueDate;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -59,9 +59,9 @@ public class Task {
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @UpdateTimestamp
     @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 }
