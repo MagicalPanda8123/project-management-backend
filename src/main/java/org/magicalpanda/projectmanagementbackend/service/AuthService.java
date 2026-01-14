@@ -3,10 +3,7 @@ package org.magicalpanda.projectmanagementbackend.service;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
-import org.magicalpanda.projectmanagementbackend.dto.request.LoginRequest;
-import org.magicalpanda.projectmanagementbackend.dto.request.RefreshTokenRequest;
-import org.magicalpanda.projectmanagementbackend.dto.request.RegisterRequest;
-import org.magicalpanda.projectmanagementbackend.dto.request.VerifyEmailRequest;
+import org.magicalpanda.projectmanagementbackend.dto.request.*;
 import org.magicalpanda.projectmanagementbackend.dto.response.LoginResponse;
 import org.magicalpanda.projectmanagementbackend.exception.ResourceAlreadyExistsException;
 import org.magicalpanda.projectmanagementbackend.exception.ResourceNotFoundException;
@@ -185,6 +182,25 @@ public class AuthService {
                 .refreshToken(newRefreshToken)
                 .build();
 
+    }
+
+    public void logout(LogoutRequest request) {
+        String token = request.getRefreshToken();
+
+        // 1. Validate & retrieve claims from token
+        Claims claims = jwtService.validateRefreshToken(token);
+
+        String jti = claims.get("jti", String.class);
+
+        // 2. Load persisted refresh token
+        RefreshToken storedToken = refreshTokenRepository.findByJti(jti)
+                .orElseThrow(() -> new JwtException("Refresh token not found"));
+
+        // 3. Revoke (idempotent)
+        if (!storedToken.isRevoked()) {
+            storedToken.setRevoked(true);
+            refreshTokenRepository.save(storedToken);
+        }
     }
 
     /**
