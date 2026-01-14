@@ -3,6 +3,7 @@ package org.magicalpanda.projectmanagementbackend.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.magicalpanda.projectmanagementbackend.dto.request.LoginRequest;
+import org.magicalpanda.projectmanagementbackend.dto.request.RefreshTokenRequest;
 import org.magicalpanda.projectmanagementbackend.dto.request.RegisterRequest;
 import org.magicalpanda.projectmanagementbackend.dto.request.VerifyEmailRequest;
 import org.magicalpanda.projectmanagementbackend.dto.response.LoginResponse;
@@ -47,6 +48,14 @@ public class AuthController {
             @Valid @RequestBody LoginRequest request
     ) {
         LoginResponse response = authService.login(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<LoginResponse> refresh(
+            @Valid  @RequestBody RefreshTokenRequest request
+    ) {
+        LoginResponse response = authService.refresh(request);
         return ResponseEntity.ok(response);
     }
 }

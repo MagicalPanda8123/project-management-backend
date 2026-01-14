@@ -1,18 +1,23 @@
 package org.magicalpanda.projectmanagementbackend.service;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.magicalpanda.projectmanagementbackend.dto.request.LoginRequest;
+import org.magicalpanda.projectmanagementbackend.dto.request.RefreshTokenRequest;
 import org.magicalpanda.projectmanagementbackend.dto.request.RegisterRequest;
 import org.magicalpanda.projectmanagementbackend.dto.request.VerifyEmailRequest;
 import org.magicalpanda.projectmanagementbackend.dto.response.LoginResponse;
 import org.magicalpanda.projectmanagementbackend.exception.ResourceAlreadyExistsException;
 import org.magicalpanda.projectmanagementbackend.exception.ResourceNotFoundException;
 import org.magicalpanda.projectmanagementbackend.exception.VerificationCodeException;
+import org.magicalpanda.projectmanagementbackend.model.RefreshToken;
 import org.magicalpanda.projectmanagementbackend.model.User;
 import org.magicalpanda.projectmanagementbackend.model.VerificationCode;
 import org.magicalpanda.projectmanagementbackend.model.enumeration.Role;
 import org.magicalpanda.projectmanagementbackend.model.enumeration.VerificationPurpose;
 import org.magicalpanda.projectmanagementbackend.proxy.EmailProxy;
+import org.magicalpanda.projectmanagementbackend.repository.RefreshTokenRepository;
 import org.magicalpanda.projectmanagementbackend.repository.UserRepository;
 import org.magicalpanda.projectmanagementbackend.repository.VerificationCodeRepository;
 import org.magicalpanda.projectmanagementbackend.security.jwt.JwtService;
@@ -24,8 +29,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.Optional;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Random;
 
 @Service
@@ -35,6 +40,7 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final VerificationCodeRepository verificationCodeRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
@@ -103,7 +109,7 @@ public class AuthService {
         }
 
         // 4. Check if code has expired
-        if (code.getExpiresAt().isBefore(LocalDateTime.now())) {
+        if (code.getExpiresAt().isBefore(Instant.now())) {
             throw VerificationCodeException.codeExpired();
         }
 
@@ -128,13 +134,55 @@ public class AuthService {
         // 2. Authentication succeeded -> extract principal
         SecurityUser principal = (SecurityUser) authentication.getPrincipal();
 
-        // 3. Issue tokens
+        // 3. Issue tokens (access and refresh JWTs)
         String accessToken = jwtService.generateAccessToken(principal);
 
-        // Refresh token will be implemented later </3
+        User user = userRepository.getReferenceById(principal.getId());
+        String refreshToken = jwtService.generateRefreshToken(user);
 
         return LoginResponse.builder()
                 .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .build();
+
+    }
+
+    public LoginResponse refresh(RefreshTokenRequest request) {
+
+        String refreshToken = request.getRefreshToken();
+
+        // 1. Validate refresh token (and retrieve claims if valid)
+        Claims claims = jwtService.validateRefreshToken(refreshToken);
+
+        String jti = (String) claims.get("jti");
+        Long userId = Long.valueOf(claims.getSubject());
+
+        // 2. Load refresh token from DB (by JTI)
+        RefreshToken storedToken = refreshTokenRepository.findByJti(jti)
+                .orElseThrow(() -> new JwtException("Refresh token not found"));
+
+        // 3. Enforce server-side validity
+        if (storedToken.getExpiresAt().isBefore(Instant.now())) {
+            throw new JwtException("Refresh token expired");
+        }
+
+        if (storedToken.isRevoked()) {
+            throw new JwtException("Refresh token revoked");
+        }
+
+        // 4. Rotate refresh token
+        storedToken.setRevoked(true);
+        refreshTokenRepository.save(storedToken);
+
+        User user = storedToken.getUser();
+        SecurityUser securityUser = new SecurityUser(user);
+
+        String newAccessToken = jwtService.generateAccessToken(securityUser);
+        String newRefreshToken = jwtService.generateRefreshToken(user);
+
+        return LoginResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshToken)
                 .build();
 
     }
@@ -159,7 +207,7 @@ public class AuthService {
                 .purpose(VerificationPurpose.EMAIL)
                 .user(user)
                 .isUsed(false)
-                .expiresAt(LocalDateTime.now().plusMinutes(15))
+                .expiresAt(Instant.now().plus(Duration.ofMinutes(15)))
                 .build();
     }
 
