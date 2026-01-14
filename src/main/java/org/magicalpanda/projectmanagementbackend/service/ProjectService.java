@@ -14,6 +14,8 @@ import org.magicalpanda.projectmanagementbackend.model.enumeration.ProjectStatus
 import org.magicalpanda.projectmanagementbackend.repository.MembershipRepository;
 import org.magicalpanda.projectmanagementbackend.repository.ProjectRepository;
 import org.magicalpanda.projectmanagementbackend.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -65,8 +67,8 @@ public class ProjectService {
                 .build();
     }
 
-    public List<ProjectSummaryResponse> getMyProjects(Long userId, String scope) {
-        List<Membership> memberships;
+    public Page<ProjectSummaryResponse> getMyProjects(Long userId, String scope, Pageable pageable) {
+        Page<Membership> memberships;
 
         // set default scope to "all"
         String resolvedScope = (scope == null) ? "all" : scope.toLowerCase();
@@ -77,28 +79,29 @@ public class ProjectService {
                     .findByUserIdAndRoleAndStatus(
                             userId,
                             ProjectRole.OWNER,
-                            MembershipStatus.ACTIVE
+                            MembershipStatus.ACTIVE,
+                            pageable
                     );
 
             case "member" -> membershipRepository
                     .findByUserIdAndRoleInAndStatus(
                             userId,
                             List.of(ProjectRole.MANAGER, ProjectRole.MEMBER),
-                            MembershipStatus.ACTIVE
+                            MembershipStatus.ACTIVE,
+                            pageable
                     );
 
             case "all" -> membershipRepository
                     .findByUserIdAndStatus(
                             userId,
-                            MembershipStatus.ACTIVE
+                            MembershipStatus.ACTIVE,
+                            pageable
                     );
 
             default -> throw new IllegalArgumentException("Invalid scope provided: " + scope + ", possible values: all, owned, member");
         };
 
-        return memberships.stream()
-                .map(this::toProjectSummary)
-                .toList();
+        return memberships.map(this::toProjectSummary);
     }
 
     private ProjectSummaryResponse toProjectSummary(Membership membership) {

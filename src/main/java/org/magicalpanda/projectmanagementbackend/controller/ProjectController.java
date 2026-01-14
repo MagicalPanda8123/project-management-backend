@@ -7,6 +7,10 @@ import org.magicalpanda.projectmanagementbackend.dto.response.ProjectResponse;
 import org.magicalpanda.projectmanagementbackend.dto.response.ProjectSummaryResponse;
 import org.magicalpanda.projectmanagementbackend.security.user.SecurityUser;
 import org.magicalpanda.projectmanagementbackend.service.ProjectService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -34,11 +38,13 @@ public class ProjectController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ProjectSummaryResponse>> getMyProjects(
+    public ResponseEntity<Page<ProjectSummaryResponse>> getMyProjects(
             @RequestParam(required = false, defaultValue = "all") String scope,
+            @PageableDefault(size =  10, sort = "createdAt", direction = Sort.Direction.DESC)
+            Pageable pageable,
             @AuthenticationPrincipal SecurityUser securityUser
     ) {
-        List<ProjectSummaryResponse> projects = projectService.getMyProjects(securityUser.getId(), scope);
+        Page<ProjectSummaryResponse> projects = projectService.getMyProjects(securityUser.getId(), scope, pageable);
 
         return ResponseEntity.ok(projects);
     }

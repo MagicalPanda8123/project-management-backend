@@ -3,6 +3,8 @@ package org.magicalpanda.projectmanagementbackend.repository;
 import org.magicalpanda.projectmanagementbackend.model.Membership;
 import org.magicalpanda.projectmanagementbackend.model.enumeration.MembershipStatus;
 import org.magicalpanda.projectmanagementbackend.model.enumeration.ProjectRole;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Collection;
@@ -10,9 +12,9 @@ import java.util.List;
 
 public interface MembershipRepository extends JpaRepository<Membership, Long> {
 
-    List<Membership> findByUserIdAndStatus(Long userId, MembershipStatus status);
+    Page<Membership> findByUserIdAndStatus(Long userId, MembershipStatus status, Pageable pageable);
 
-    List<Membership> findByUserIdAndRoleAndStatus(Long userId, ProjectRole role, MembershipStatus status);
+    Page<Membership> findByUserIdAndRoleAndStatus(Long userId, ProjectRole role, MembershipStatus status, Pageable pageable);
 
-    List<Membership> findByUserIdAndRoleInAndStatus(Long userId, Collection<ProjectRole> roles, MembershipStatus status);
+    Page<Membership> findByUserIdAndRoleInAndStatus(Long userId, Collection<ProjectRole> roles, MembershipStatus status, Pageable pageable);
 }
