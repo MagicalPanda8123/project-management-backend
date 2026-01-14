@@ -3,6 +3,7 @@ package org.magicalpanda.projectmanagementbackend.service;
 import lombok.RequiredArgsConstructor;
 import org.magicalpanda.projectmanagementbackend.dto.request.CreateProjectRequest;
 import org.magicalpanda.projectmanagementbackend.dto.response.ProjectResponse;
+import org.magicalpanda.projectmanagementbackend.dto.response.ProjectSummaryResponse;
 import org.magicalpanda.projectmanagementbackend.exception.ResourceNotFoundException;
 import org.magicalpanda.projectmanagementbackend.model.Membership;
 import org.magicalpanda.projectmanagementbackend.model.Project;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -59,6 +61,54 @@ public class ProjectService {
                 .description(project.getDescription())
                 .status(project.getStatus())
                 .ownerId(owner.getId())
+                .createdAt(project.getCreatedAt())
+                .build();
+    }
+
+    public List<ProjectSummaryResponse> getMyProjects(Long userId, String scope) {
+        List<Membership> memberships;
+
+        // set default scope to "all"
+        String resolvedScope = (scope == null) ? "all" : scope.toLowerCase();
+
+        memberships = switch (resolvedScope) {
+
+            case "owned" -> membershipRepository
+                    .findByUserIdAndRoleAndStatus(
+                            userId,
+                            ProjectRole.OWNER,
+                            MembershipStatus.ACTIVE
+                    );
+
+            case "member" -> membershipRepository
+                    .findByUserIdAndRoleInAndStatus(
+                            userId,
+                            List.of(ProjectRole.MANAGER, ProjectRole.MEMBER),
+                            MembershipStatus.ACTIVE
+                    );
+
+            case "all" -> membershipRepository
+                    .findByUserIdAndStatus(
+                            userId,
+                            MembershipStatus.ACTIVE
+                    );
+
+            default -> throw new IllegalArgumentException("Invalid scope provided: " + scope + ", possible values: all, owned, member");
+        };
+
+        return memberships.stream()
+                .map(this::toProjectSummary)
+                .toList();
+    }
+
+    private ProjectSummaryResponse toProjectSummary(Membership membership) {
+        Project project = membership.getProject();
+
+        return ProjectSummaryResponse.builder()
+                .id(project.getId())
+                .name(project.getName())
+                .status(project.getStatus())
+                .role(membership.getRole())
                 .createdAt(project.getCreatedAt())
                 .build();
     }
