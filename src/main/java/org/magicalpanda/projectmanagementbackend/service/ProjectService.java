@@ -2,6 +2,7 @@ package org.magicalpanda.projectmanagementbackend.service;
 
 import lombok.RequiredArgsConstructor;
 import org.magicalpanda.projectmanagementbackend.dto.request.CreateProjectRequest;
+import org.magicalpanda.projectmanagementbackend.dto.response.ProjectDetailsResponse;
 import org.magicalpanda.projectmanagementbackend.dto.response.ProjectResponse;
 import org.magicalpanda.projectmanagementbackend.dto.response.ProjectSummaryResponse;
 import org.magicalpanda.projectmanagementbackend.exception.ResourceNotFoundException;
@@ -16,6 +17,7 @@ import org.magicalpanda.projectmanagementbackend.repository.ProjectRepository;
 import org.magicalpanda.projectmanagementbackend.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -102,6 +104,30 @@ public class ProjectService {
         };
 
         return memberships.map(this::toProjectSummary);
+    }
+
+    @Transactional(readOnly = true)
+    @PreAuthorize("@projectPolicy.canViewProject(#projectId, #userId)")
+    public ProjectDetailsResponse getProjectDetails(Long projectId, Long userId) {
+
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + projectId));
+
+        Membership membership = membershipRepository
+                .findByProjectIdAndUserIdAndStatus(projectId, userId, MembershipStatus.ACTIVE)
+                .orElse(null); // ADMIN may not have membership
+
+        ProjectRole myRole = (membership != null) ? membership.getRole() : null;
+        Instant joinedAt = (membership != null) ? membership.getJoinedAt() : null;
+
+        return ProjectDetailsResponse.builder()
+                .id(project.getId())
+                .name(project.getName())
+                .description(project.getDescription())
+                .createdAt(project.getCreatedAt())
+                .myRole(myRole)
+                .joinedAt(joinedAt)
+                .build();
     }
 
     private ProjectSummaryResponse toProjectSummary(Membership membership) {

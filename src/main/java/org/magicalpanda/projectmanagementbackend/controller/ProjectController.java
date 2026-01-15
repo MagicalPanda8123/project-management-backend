@@ -3,6 +3,7 @@ package org.magicalpanda.projectmanagementbackend.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.magicalpanda.projectmanagementbackend.dto.request.CreateProjectRequest;
+import org.magicalpanda.projectmanagementbackend.dto.response.ProjectDetailsResponse;
 import org.magicalpanda.projectmanagementbackend.dto.response.ProjectResponse;
 import org.magicalpanda.projectmanagementbackend.dto.response.ProjectSummaryResponse;
 import org.magicalpanda.projectmanagementbackend.security.user.SecurityUser;
@@ -47,5 +48,14 @@ public class ProjectController {
         Page<ProjectSummaryResponse> projects = projectService.getMyProjects(securityUser.getId(), scope, pageable);
 
         return ResponseEntity.ok(projects);
+    }
+
+    @GetMapping("/{projectId}")
+    public ResponseEntity<ProjectDetailsResponse> getProjectById(
+            @PathVariable Long projectId,
+            @AuthenticationPrincipal SecurityUser securityUser
+    ) {
+        ProjectDetailsResponse response = projectService.getProjectDetails(projectId, securityUser.getId());
+        return ResponseEntity.ok(response);
     }
 }

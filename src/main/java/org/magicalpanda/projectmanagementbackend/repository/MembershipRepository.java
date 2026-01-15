@@ -8,7 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Collection;
-import java.util.List;
+import java.util.Optional;
 
 public interface MembershipRepository extends JpaRepository<Membership, Long> {
 
@@ -17,4 +17,8 @@ public interface MembershipRepository extends JpaRepository<Membership, Long> {
     Page<Membership> findByUserIdAndRoleAndStatus(Long userId, ProjectRole role, MembershipStatus status, Pageable pageable);
 
     Page<Membership> findByUserIdAndRoleInAndStatus(Long userId, Collection<ProjectRole> roles, MembershipStatus status, Pageable pageable);
+
+    boolean existsByProjectIdAndUserIdAndRoleInAndStatus(Long projectId, Long userId, Collection<ProjectRole> roles, MembershipStatus status);
+
+    Optional<Membership> findByProjectIdAndUserIdAndStatus(Long projectId, Long userId, MembershipStatus status);
 }
