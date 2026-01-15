@@ -71,4 +71,17 @@ public class ProjectPolicy {
 
     }
 
+    public boolean canUpdateProject(Long projectId, Long userId) {
+
+        if (SecurityUtils.isAdmin()) {
+            return true;
+        }
+
+        return membershipRepository.existsByProjectIdAndUserIdAndRoleInAndStatus(
+                projectId,
+                userId,
+                List.of(ProjectRole.OWNER, ProjectRole.MANAGER),
+                MembershipStatus.ACTIVE
+        );
+    }
 }

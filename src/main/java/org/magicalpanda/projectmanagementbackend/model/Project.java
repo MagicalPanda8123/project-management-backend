@@ -25,11 +25,15 @@ public class Project {
     @EqualsAndHashCode.Include
     private Long id;
 
+    @Setter
     private String name;
+
+    @Setter
     private String description;
 
     @Column(name = "status")
     @Enumerated(EnumType.STRING)
+    @Setter
     private ProjectStatus status = ProjectStatus.IN_PROGRESS;
 
     @ManyToOne(optional = false,  fetch = FetchType.LAZY)

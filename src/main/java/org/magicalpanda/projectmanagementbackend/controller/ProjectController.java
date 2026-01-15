@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.magicalpanda.projectmanagementbackend.dto.enumeration.ProjectStatusFilter;
 import org.magicalpanda.projectmanagementbackend.dto.request.CreateProjectRequest;
+import org.magicalpanda.projectmanagementbackend.dto.request.UpdateProjectRequest;
 import org.magicalpanda.projectmanagementbackend.dto.response.ProjectDetailsResponse;
 import org.magicalpanda.projectmanagementbackend.dto.response.ProjectResponse;
 import org.magicalpanda.projectmanagementbackend.dto.response.ProjectSummaryResponse;
@@ -59,5 +60,17 @@ public class ProjectController {
     ) {
         ProjectDetailsResponse response = projectService.getProjectDetails(projectId, securityUser.getId());
         return ResponseEntity.ok(response);
+    }
+
+
+    @PatchMapping("/{projectId}")
+    public ResponseEntity<Void> updateProject(
+            @PathVariable Long projectId,
+            @AuthenticationPrincipal SecurityUser securityUser,
+            @Valid @RequestBody UpdateProjectRequest request
+
+    ) {
+        projectService.updateProject(projectId, securityUser.getId(), request);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -3,9 +3,11 @@ package org.magicalpanda.projectmanagementbackend.service;
 import lombok.RequiredArgsConstructor;
 import org.magicalpanda.projectmanagementbackend.dto.enumeration.ProjectStatusFilter;
 import org.magicalpanda.projectmanagementbackend.dto.request.CreateProjectRequest;
+import org.magicalpanda.projectmanagementbackend.dto.request.UpdateProjectRequest;
 import org.magicalpanda.projectmanagementbackend.dto.response.ProjectDetailsResponse;
 import org.magicalpanda.projectmanagementbackend.dto.response.ProjectResponse;
 import org.magicalpanda.projectmanagementbackend.dto.response.ProjectSummaryResponse;
+import org.magicalpanda.projectmanagementbackend.exception.InvalidaProjectStateTransition;
 import org.magicalpanda.projectmanagementbackend.exception.ResourceNotFoundException;
 import org.magicalpanda.projectmanagementbackend.model.Membership;
 import org.magicalpanda.projectmanagementbackend.model.Project;
@@ -152,6 +154,46 @@ public class ProjectService {
                 .myRole(myRole)
                 .joinedAt(joinedAt)
                 .build();
+    }
+
+    // Only for ADMIN or active members (OWNER, MANAGER)
+    @PreAuthorize("@projectPolicy.canUpdateProject(#projectId, #userId)")
+    public void updateProject(
+            Long projectId,
+            Long userId,
+            UpdateProjectRequest request
+    ) {
+
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + projectId));
+
+        // DELETED projects are permanently immutable
+        if (project.getStatus().equals(ProjectStatus.DELETED)) {
+            throw new IllegalStateException("The project at its current state " + project.getStatus() + " cannot be updated");
+        }
+
+        // ARCHIVED projects cannot be updated if users don't update the status to other states as well
+        if (project.getStatus().equals(ProjectStatus.ARCHIVED)
+                && (request.getStatus() == null || request.getStatus().equals(ProjectStatus.ARCHIVED))) {
+            throw new IllegalStateException("The project at its current state " + project.getStatus() + " cannot be updated");
+        }
+
+        // Do not allow DELETE project through this method
+        if (request.getStatus() != null &&  request.getStatus().equals(ProjectStatus.DELETED)) {
+            throw new InvalidaProjectStateTransition("Project cannot be deleted through PATCH, use DELETE instead.");
+        }
+
+        if (request.getName() != null) {
+            project.setName(request.getName());
+        }
+
+        if (request.getDescription() != null) {
+            project.setDescription(request.getDescription());
+        }
+
+        if (request.getStatus() != null) {
+            project.setStatus(request.getStatus());
+        }
     }
 
     private ProjectSummaryResponse toProjectSummary(Membership membership) {
