@@ -2,9 +2,13 @@ package org.magicalpanda.projectmanagementbackend.policy;
 
 
 import lombok.RequiredArgsConstructor;
+import org.magicalpanda.projectmanagementbackend.dto.enumeration.ProjectStatusFilter;
 import org.magicalpanda.projectmanagementbackend.model.enumeration.MembershipStatus;
 import org.magicalpanda.projectmanagementbackend.model.enumeration.ProjectRole;
+import org.magicalpanda.projectmanagementbackend.model.enumeration.ProjectStatus;
 import org.magicalpanda.projectmanagementbackend.repository.MembershipRepository;
+import org.magicalpanda.projectmanagementbackend.util.SecurityUtils;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -17,9 +21,43 @@ public class ProjectPolicy {
 
     private final MembershipRepository  membershipRepository;
 
+    private static final List<ProjectStatus> DEFAULT_VISIBLE_STATUSES =
+            List.of(ProjectStatus.IN_PROGRESS, ProjectStatus.COMPLETED);
+
+    // resolve the "status" query param
+    public static List<ProjectStatus> resolveVisibleStatuses(List<ProjectStatusFilter> filters) {
+
+        boolean isAdmin = SecurityUtils.isAdmin();
+
+        // Default behavior: no filter provided
+        if (filters == null ||  filters.isEmpty())
+            return DEFAULT_VISIBLE_STATUSES;
+
+        // Expand ALL
+        if (filters.contains(ProjectStatusFilter.ALL)) {
+            if (isAdmin) {
+                filters = List.of(ProjectStatusFilter.values());
+            } else {
+                filters = List.of(ProjectStatusFilter.IN_PROGRESS, ProjectStatusFilter.COMPLETED, ProjectStatusFilter.ARCHIVED);
+            }
+        }
+
+        // Authorization gate
+        if (filters.contains(ProjectStatusFilter.DELETED) && !SecurityUtils.isAdmin()) {
+            throw new AuthorizationDeniedException("You ain't an admin to view deleted projects bruh </3");
+        }
+
+        // Map API-level enum to domain enum
+        return filters.stream()
+                .filter(f -> f != ProjectStatusFilter.ALL)
+                .map(ProjectStatusFilter::name)
+                .map(ProjectStatus::valueOf)
+                .toList();
+
+    }
+
     public boolean canViewProject(Long projectId, Long userId) {
-        System.out.println("IS ADMIN " + isAdmin());
-        return isAdmin() || membershipRepository
+        return SecurityUtils.isAdmin() || membershipRepository
                 .existsByProjectIdAndUserIdAndRoleInAndStatus(
                         projectId,
                         userId,
@@ -33,11 +71,4 @@ public class ProjectPolicy {
 
     }
 
-    private boolean isAdmin() {
-        Authentication authentication  = SecurityContextHolder.getContext().getAuthentication();
-
-        assert authentication != null;
-        return authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-    }
 }

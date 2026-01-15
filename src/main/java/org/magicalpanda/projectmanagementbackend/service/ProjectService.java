@@ -1,6 +1,7 @@
 package org.magicalpanda.projectmanagementbackend.service;
 
 import lombok.RequiredArgsConstructor;
+import org.magicalpanda.projectmanagementbackend.dto.enumeration.ProjectStatusFilter;
 import org.magicalpanda.projectmanagementbackend.dto.request.CreateProjectRequest;
 import org.magicalpanda.projectmanagementbackend.dto.response.ProjectDetailsResponse;
 import org.magicalpanda.projectmanagementbackend.dto.response.ProjectResponse;
@@ -12,9 +13,11 @@ import org.magicalpanda.projectmanagementbackend.model.User;
 import org.magicalpanda.projectmanagementbackend.model.enumeration.MembershipStatus;
 import org.magicalpanda.projectmanagementbackend.model.enumeration.ProjectRole;
 import org.magicalpanda.projectmanagementbackend.model.enumeration.ProjectStatus;
+import org.magicalpanda.projectmanagementbackend.policy.ProjectPolicy;
 import org.magicalpanda.projectmanagementbackend.repository.MembershipRepository;
 import org.magicalpanda.projectmanagementbackend.repository.ProjectRepository;
 import org.magicalpanda.projectmanagementbackend.repository.UserRepository;
+import org.magicalpanda.projectmanagementbackend.util.SecurityUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -69,8 +72,10 @@ public class ProjectService {
                 .build();
     }
 
-    public Page<ProjectSummaryResponse> getMyProjects(Long userId, String scope, Pageable pageable) {
+    public Page<ProjectSummaryResponse> getMyProjects(Long userId, String scope, List<ProjectStatusFilter> status, Pageable pageable) {
+
         Page<Membership> memberships;
+        List<ProjectStatus> resolvedStatus = ProjectPolicy.resolveVisibleStatuses(status);
 
         // set default scope to "all"
         String resolvedScope = (scope == null) ? "all" : scope.toLowerCase();
@@ -78,25 +83,28 @@ public class ProjectService {
         memberships = switch (resolvedScope) {
 
             case "owned" -> membershipRepository
-                    .findByUserIdAndRoleAndStatus(
+                    .findByUserIdAndRoleAndStatusAndProject_StatusIn(
                             userId,
                             ProjectRole.OWNER,
                             MembershipStatus.ACTIVE,
+                            resolvedStatus,
                             pageable
                     );
 
             case "member" -> membershipRepository
-                    .findByUserIdAndRoleInAndStatus(
+                    .findByUserIdAndRoleInAndStatusAndProject_StatusIn(
                             userId,
                             List.of(ProjectRole.MANAGER, ProjectRole.MEMBER),
                             MembershipStatus.ACTIVE,
+                            resolvedStatus,
                             pageable
                     );
 
             case "all" -> membershipRepository
-                    .findByUserIdAndStatus(
+                    .findByUserIdAndStatusAndProject_StatusIn(
                             userId,
                             MembershipStatus.ACTIVE,
+                            resolvedStatus,
                             pageable
                     );
 
@@ -107,11 +115,27 @@ public class ProjectService {
     }
 
     @Transactional(readOnly = true)
+    // Only for ADMIN or active members (OWNER, MANGER, MEMBER)
     @PreAuthorize("@projectPolicy.canViewProject(#projectId, #userId)")
     public ProjectDetailsResponse getProjectDetails(Long projectId, Long userId) {
+        Project project;
 
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + projectId));
+        if (SecurityUtils.isAdmin()) {
+            // Admins can view project details regardless of the project status
+            project =  projectRepository.findById(projectId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + projectId));
+        } else {
+            // Non-admins can view project details with restricted statuses (archived or in progress only)
+            project = projectRepository
+                    .findByIdAndStatusIn(
+                            projectId,
+                            List.of(
+                                    ProjectStatus.IN_PROGRESS,
+                                    ProjectStatus.COMPLETED,
+                                    ProjectStatus.ARCHIVED
+                            ))
+                    .orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + projectId));
+        }
 
         Membership membership = membershipRepository
                 .findByProjectIdAndUserIdAndStatus(projectId, userId, MembershipStatus.ACTIVE)

@@ -3,6 +3,7 @@ package org.magicalpanda.projectmanagementbackend.repository;
 import org.magicalpanda.projectmanagementbackend.model.Membership;
 import org.magicalpanda.projectmanagementbackend.model.enumeration.MembershipStatus;
 import org.magicalpanda.projectmanagementbackend.model.enumeration.ProjectRole;
+import org.magicalpanda.projectmanagementbackend.model.enumeration.ProjectStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,11 +13,28 @@ import java.util.Optional;
 
 public interface MembershipRepository extends JpaRepository<Membership, Long> {
 
-    Page<Membership> findByUserIdAndStatus(Long userId, MembershipStatus status, Pageable pageable);
+    Page<Membership> findByUserIdAndStatusAndProject_StatusIn(
+            Long userId,
+            MembershipStatus status,
+            Collection<ProjectStatus> projectStatuses,
+            Pageable pageable
+    );
 
-    Page<Membership> findByUserIdAndRoleAndStatus(Long userId, ProjectRole role, MembershipStatus status, Pageable pageable);
+    Page<Membership> findByUserIdAndRoleAndStatusAndProject_StatusIn(
+            Long userId,
+            ProjectRole role,
+            MembershipStatus status,
+            Collection<ProjectStatus> projectStatuses,
+            Pageable pageable
+    );
 
-    Page<Membership> findByUserIdAndRoleInAndStatus(Long userId, Collection<ProjectRole> roles, MembershipStatus status, Pageable pageable);
+    Page<Membership> findByUserIdAndRoleInAndStatusAndProject_StatusIn(
+            Long userId,
+            Collection<ProjectRole> roles,
+            MembershipStatus status,
+            Collection<ProjectStatus> projectStatuses,
+            Pageable pageable
+    );
 
     boolean existsByProjectIdAndUserIdAndRoleInAndStatus(Long projectId, Long userId, Collection<ProjectRole> roles, MembershipStatus status);
 

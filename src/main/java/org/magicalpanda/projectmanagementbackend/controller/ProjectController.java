@@ -2,6 +2,7 @@ package org.magicalpanda.projectmanagementbackend.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.magicalpanda.projectmanagementbackend.dto.enumeration.ProjectStatusFilter;
 import org.magicalpanda.projectmanagementbackend.dto.request.CreateProjectRequest;
 import org.magicalpanda.projectmanagementbackend.dto.response.ProjectDetailsResponse;
 import org.magicalpanda.projectmanagementbackend.dto.response.ProjectResponse;
@@ -41,11 +42,12 @@ public class ProjectController {
     @GetMapping
     public ResponseEntity<Page<ProjectSummaryResponse>> getMyProjects(
             @RequestParam(required = false, defaultValue = "all") String scope,
+            @RequestParam(required = false) List<ProjectStatusFilter> status,
             @PageableDefault(size =  10, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable,
             @AuthenticationPrincipal SecurityUser securityUser
     ) {
-        Page<ProjectSummaryResponse> projects = projectService.getMyProjects(securityUser.getId(), scope, pageable);
+        Page<ProjectSummaryResponse> projects = projectService.getMyProjects(securityUser.getId(), scope, status, pageable);
 
         return ResponseEntity.ok(projects);
     }
