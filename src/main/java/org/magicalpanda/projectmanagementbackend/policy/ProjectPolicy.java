@@ -57,7 +57,7 @@ public class ProjectPolicy {
     }
 
     public boolean canViewProject(Long projectId, Long userId) {
-        return SecurityUtils.isAdmin() || membershipRepository
+        boolean allowed = SecurityUtils.isAdmin() || membershipRepository
                 .existsByProjectIdAndUserIdAndRoleInAndStatus(
                         projectId,
                         userId,
@@ -69,6 +69,11 @@ public class ProjectPolicy {
                         MembershipStatus.ACTIVE
                 );
 
+        if (!allowed) {
+            throw new AuthorizationDeniedException("You ain't no admin, owner or member to view the project </3");
+        }
+
+        return true;
     }
 
     public boolean canUpdateProject(Long projectId, Long userId) {
@@ -77,11 +82,17 @@ public class ProjectPolicy {
             return true;
         }
 
-        return membershipRepository.existsByProjectIdAndUserIdAndRoleInAndStatus(
+        boolean allowed =  membershipRepository.existsByProjectIdAndUserIdAndRoleInAndStatus(
                 projectId,
                 userId,
                 List.of(ProjectRole.OWNER, ProjectRole.MANAGER),
                 MembershipStatus.ACTIVE
         );
+
+        if (!allowed) {
+            throw new AuthorizationDeniedException("You ain't no admin, owner or member to update the project </3");
+        }
+
+        return true;
     }
 }
