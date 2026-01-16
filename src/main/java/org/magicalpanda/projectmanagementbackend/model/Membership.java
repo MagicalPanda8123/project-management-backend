@@ -1,12 +1,10 @@
 package org.magicalpanda.projectmanagementbackend.model;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.magicalpanda.projectmanagementbackend.model.enumeration.MembershipStatus;
 import org.magicalpanda.projectmanagementbackend.model.enumeration.ProjectRole;
 
 import java.time.Instant;
@@ -19,6 +17,8 @@ import java.time.Instant;
         name = "memberships"
 )
 @Getter
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Membership {
@@ -35,7 +35,13 @@ public class Membership {
     private Project project;
 
     @Enumerated(EnumType.STRING)
+    @Setter
     private ProjectRole role;
+
+    @Column(name = "status")
+    @Enumerated(EnumType.STRING)
+    @Setter
+    private MembershipStatus status;
 
     @Column(name = "joined_at")
     private Instant JoinedAt;

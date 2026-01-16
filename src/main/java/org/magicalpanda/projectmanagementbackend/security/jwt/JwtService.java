@@ -91,12 +91,15 @@ public class JwtService {
     }
 
     // validate access token
-    public void validateAccessToken(String token) {
-        String tokenType = extractClaim(token, (claims) -> claims.get("token_type").toString());
+    public Claims validateAccessToken(String token) {
+        Claims claims = extractAllClaims(token);
+        String tokenType = claims.get("token_type").toString();
 
         if (!TokenType.ACCESS_TOKEN.name().equals(tokenType)) {
             throw new JwtException("Invalid token type: " + tokenType);
         }
+
+        return claims;
     }
 
     // validate refresh token
@@ -119,8 +122,8 @@ public class JwtService {
                 .getPayload();
     }
 
-    private <T> @Nullable T extractClaim(String token, Function<Claims, T> claimsResolver) {
-        final Claims claims = extractAllClaims(token);
-        return claimsResolver.apply(claims);
-    }
+//    private <T> @Nullable T extractClaim(String token, Function<Claims, T> claimsResolver) {
+//        final Claims claims = extractAllClaims(token);
+//        return claimsResolver.apply(claims);
+//    }
 }

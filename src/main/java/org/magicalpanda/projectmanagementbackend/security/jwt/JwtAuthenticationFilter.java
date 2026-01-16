@@ -41,16 +41,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = authHeader.substring(7);
 
         try {
-            // 1. Validate access token (signature, expiry, token_type)
-            jwtService.validateAccessToken(token);
+            // 1. Validate access token and retrieve claims
+            Claims claims = jwtService.validateAccessToken(token);
 
-            // 2. Parse claims
-            Claims claims = jwtService.extractAllClaims(token);
-
-            // 3. Rebuild SecurityUser
+            // 2. Rebuild SecurityUser
             SecurityUser principal = buildPrincipal(claims);
 
-            // 4. Create Authentication
+            // 3. Create Authentication
             Authentication authentication =
                     new UsernamePasswordAuthenticationToken(
                             principal,
@@ -58,7 +55,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             principal.getAuthorities()
                     );
 
-            // 5. Populate SecurityContext
+            // 4. Populate SecurityContext
             SecurityContextHolder.getContext()
                     .setAuthentication(authentication);
 

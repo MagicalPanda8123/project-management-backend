@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.magicalpanda.projectmanagementbackend.model.enumeration.ProjectStatus;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -24,11 +25,16 @@ public class Project {
     @EqualsAndHashCode.Include
     private Long id;
 
+    @Setter
     private String name;
+
+    @Setter
     private String description;
 
-    @Column(name = "is_archived")
-    private boolean isArchived;
+    @Column(name = "status")
+    @Enumerated(EnumType.STRING)
+    @Setter
+    private ProjectStatus status = ProjectStatus.IN_PROGRESS;
 
     @ManyToOne(optional = false,  fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id")

@@ -1,6 +1,8 @@
 package org.magicalpanda.projectmanagementbackend.security.config;
 
 import lombok.RequiredArgsConstructor;
+import org.magicalpanda.projectmanagementbackend.security.handler.RestAccessDeniedHandler;
+import org.magicalpanda.projectmanagementbackend.security.handler.RestAuthenticationEntryPoint;
 import org.magicalpanda.projectmanagementbackend.security.jwt.JwtAuthenticationFilter;
 import org.magicalpanda.projectmanagementbackend.security.user.CustomUserDetailsSerivce;
 import org.springframework.context.annotation.Bean;
@@ -9,6 +11,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -20,6 +23,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -27,7 +31,7 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter  jwtAuthenticationFilter;
 
     @Bean
-    public SecurityFilterChain  securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain  securityFilterChain(HttpSecurity http, RestAuthenticationEntryPoint restAuthenticationEntryPoint, RestAccessDeniedHandler restAccessDeniedHandler) throws Exception {
         http
                 // JWT -> stateless
                 .csrf(AbstractHttpConfigurer::disable)
@@ -43,6 +47,11 @@ public class SecurityConfig {
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
+
+                // Exception handling (401 and 403)
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(restAuthenticationEntryPoint)
+                        .accessDeniedHandler(restAccessDeniedHandler))
 
                 // Authentication provider
                 .authenticationProvider(authenticationProvider())
