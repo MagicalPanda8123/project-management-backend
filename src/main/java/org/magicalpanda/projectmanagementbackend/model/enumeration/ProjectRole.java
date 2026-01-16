@@ -1,5 +1,7 @@
 package org.magicalpanda.projectmanagementbackend.model.enumeration;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 public enum ProjectRole {
     OWNER,
     MANAGER,
@@ -11,5 +13,10 @@ public enum ProjectRole {
 
     public boolean canDeleteProject() {
         return this == OWNER;
+    }
+
+    @JsonCreator
+    public static ProjectRole from(String value) {
+        return ProjectRole.valueOf(value.toUpperCase());
     }
 }
