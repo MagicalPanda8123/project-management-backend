@@ -36,9 +36,6 @@ public class User {
     @Column(nullable = false, unique = true)
     private String username;
 
-    @Column(name = "password_hash", nullable = false)
-    private String passwordHash;
-
     @Column(name = "is_email_verified")
     @Setter
     private boolean isEmailVerified;
@@ -46,6 +43,12 @@ public class User {
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private Role role = Role.USER;
+
+    /**
+     * Authentication methods (LOCAL, OAuth, etc.)
+     */
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<AuthIdentity> authIdentities = new ArrayList<>();
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RefreshToken>  refreshTokens = new ArrayList<>();

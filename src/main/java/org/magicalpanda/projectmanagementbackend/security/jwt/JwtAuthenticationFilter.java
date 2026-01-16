@@ -80,7 +80,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 userId,
                 username,
                 email,
-                Role.valueOf(role)
+                Role.valueOf(role),
+                true
         );
     }
 

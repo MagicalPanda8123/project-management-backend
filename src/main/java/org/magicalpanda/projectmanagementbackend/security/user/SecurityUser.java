@@ -20,7 +20,6 @@ public class SecurityUser implements UserDetails {
     private final String email;
 
     private final String username;
-    private final String passwordHash;
     private final boolean emailVerified;
 
     @Getter
@@ -30,18 +29,16 @@ public class SecurityUser implements UserDetails {
         this.id = user.getId();
         this.email = user.getEmail();
         this.username = user.getUsername();
-        this.passwordHash = user.getPasswordHash();
         this.emailVerified = user.isEmailVerified();
         this.role = user.getRole();
     }
 
-    public SecurityUser(Long userId, String username, String email, Role role) {
+    public SecurityUser(Long userId, String username, String email, Role role, boolean emailVerified) {
         this.id = userId;
         this.username = username;
         this.email = email;
         this.role = role;
-        this.passwordHash = null;
-        this.emailVerified = true;
+        this.emailVerified = emailVerified;
     }
 
     @Override
@@ -51,9 +48,14 @@ public class SecurityUser implements UserDetails {
         );
     }
 
+
+    /**
+     * Credentials are not exposed via UserDetails.
+     * Authentication already happened upstream.
+     */
     @Override
     public @Nullable String getPassword() {
-        return this.passwordHash;
+        return null;
     }
 
     @Override
