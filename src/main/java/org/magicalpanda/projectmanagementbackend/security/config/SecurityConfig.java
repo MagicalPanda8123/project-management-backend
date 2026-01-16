@@ -4,12 +4,11 @@ import lombok.RequiredArgsConstructor;
 import org.magicalpanda.projectmanagementbackend.security.handler.RestAccessDeniedHandler;
 import org.magicalpanda.projectmanagementbackend.security.handler.RestAuthenticationEntryPoint;
 import org.magicalpanda.projectmanagementbackend.security.jwt.JwtAuthenticationFilter;
-import org.magicalpanda.projectmanagementbackend.security.user.CustomUserDetailsSerivce;
+import org.magicalpanda.projectmanagementbackend.security.oauth.GoogleOidcUserService;
+import org.magicalpanda.projectmanagementbackend.security.oauth.Oauth2LoginSuccessHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.AuthenticationProvider;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -27,8 +26,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final CustomUserDetailsSerivce customUserDetailsSerivce;
     private final JwtAuthenticationFilter  jwtAuthenticationFilter;
+    private final GoogleOidcUserService googleOidcUserService;
+    private final Oauth2LoginSuccessHandler oauth2LoginSuccessHandler;
 
     @Bean
     public SecurityFilterChain  securityFilterChain(HttpSecurity http, RestAuthenticationEntryPoint restAuthenticationEntryPoint, RestAccessDeniedHandler restAccessDeniedHandler) throws Exception {
@@ -43,6 +43,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/auth/**",
+                                "/oauth2/**",
                                 "/error"
                         ).permitAll()
                         .anyRequest().authenticated()
@@ -53,8 +54,13 @@ public class SecurityConfig {
                         .authenticationEntryPoint(restAuthenticationEntryPoint)
                         .accessDeniedHandler(restAccessDeniedHandler))
 
-                // Authentication provider
-                .authenticationProvider(authenticationProvider())
+                // OAuth2 login (with OIDC)
+                .oauth2Login(oauth -> oauth
+                        .userInfoEndpoint(userInfo ->
+                                userInfo.oidcUserService(googleOidcUserService)
+                        )
+                        .successHandler(oauth2LoginSuccessHandler)
+                )
 
                 // JWT filter
                 .addFilterBefore(
@@ -68,16 +74,6 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
-    }
-
-    @Bean
-    public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider provider =
-                new DaoAuthenticationProvider(customUserDetailsSerivce);
-
-        provider.setPasswordEncoder(passwordEncoder());
-
-        return provider;
     }
 
     @Bean
