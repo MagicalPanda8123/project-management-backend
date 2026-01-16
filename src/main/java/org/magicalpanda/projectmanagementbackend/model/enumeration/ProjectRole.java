@@ -1,6 +1,9 @@
 package org.magicalpanda.projectmanagementbackend.model.enumeration;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import lombok.Getter;
+
+@Getter
 
 public enum ProjectRole {
     OWNER,

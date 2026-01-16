@@ -9,6 +9,9 @@ import org.magicalpanda.projectmanagementbackend.model.enumeration.ProjectRole;
 public class CreateMembershipRequest {
 
     @NotNull
+    private Long projectId;
+
+    @NotNull
     private Long userId;
 
     @NotNull

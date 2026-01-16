@@ -36,7 +36,11 @@ public interface MembershipRepository extends JpaRepository<Membership, Long> {
             Pageable pageable
     );
 
+    Optional<Membership> findByUserIdAndProjectId(Long userId, Long projectId);
+
     boolean existsByProjectIdAndUserIdAndRoleInAndStatus(Long projectId, Long userId, Collection<ProjectRole> roles, MembershipStatus status);
+
+    Optional<Membership> findByProjectIdAndUserId(Long projectId, Long userId);
 
     Optional<Membership> findByProjectIdAndUserIdAndStatus(Long projectId, Long userId, MembershipStatus status);
 }

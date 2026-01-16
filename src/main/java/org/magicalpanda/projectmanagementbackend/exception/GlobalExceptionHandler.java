@@ -222,7 +222,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({
             MethodArgumentTypeMismatchException.class,
             ConversionFailedException.class,
-            InvalidaProjectStateTransition.class
+            InvalidStateTransition.class
     })
     public ResponseEntity<ApiErrorResponse> handleRequestParamConversionException(
             Exception ex,
@@ -258,7 +258,25 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .badRequest()
                 .body(response);
-}
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ApiErrorResponse> handleIllegalStateException(
+            IllegalStateException ex,
+            HttpServletRequest request
+    ) {
+        ApiErrorResponse response = ApiErrorResponse.builder()
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .timestamp(Instant.now())
+                .build();
+
+        return ResponseEntity
+                .badRequest()
+                .body(response);
+    }
 
 
     @ExceptionHandler(Exception.class)

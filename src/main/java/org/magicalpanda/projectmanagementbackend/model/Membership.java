@@ -35,10 +35,12 @@ public class Membership {
     private Project project;
 
     @Enumerated(EnumType.STRING)
+    @Setter
     private ProjectRole role;
 
     @Column(name = "status")
     @Enumerated(EnumType.STRING)
+    @Setter
     private MembershipStatus status;
 
     @Column(name = "joined_at")

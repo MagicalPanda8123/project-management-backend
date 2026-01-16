@@ -11,6 +11,7 @@ import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Optional;
 
 @Component("membershipPolicy")
 @RequiredArgsConstructor
@@ -41,62 +42,29 @@ public class MembershipPolicy {
         return true;
     }
 
-    // For remove, change role
-    public boolean canManageMembers(Long projectId, Long userId) {
-
-        if (SecurityUtils.isAdmin()) {
-            return true;
-        }
-
-        boolean allowed = membershipRepository
-                .existsByProjectIdAndUserIdAndRoleInAndStatus(
-                        projectId,
-                        userId,
-                        List.of(ProjectRole.OWNER),
-                        MembershipStatus.ACTIVE
-                );
-
-        if (!allowed) {
-            throw new AuthorizationDeniedException(
-                    "You ain't no owner to manage members </3"
-            );
-        }
-
-        return true;
-    }
-
-    // Self-action
-    public boolean canRespondToInvite(Long membershipId, Long userId) {
+    public boolean canUpdate(Long membershipId, Long actorId) {
 
         Membership membership = membershipRepository.findById(membershipId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Membership not found")
-                );
+                .orElseThrow(() -> new ResourceNotFoundException("Membership", membershipId));
 
-        boolean allowed = membership.getUser().getId().equals(userId);
-
-        if (!allowed) {
-            throw new AuthorizationDeniedException("You are not the invited !");
+        if (membership.getStatus().equals(MembershipStatus.LEFT) || membership.getStatus().equals(MembershipStatus.DELETED)) {
+            throw new AuthorizationDeniedException("Membership is in invalid state for mutation, current status: " +  membership.getStatus().name());
         }
 
-        return true;
-    }
-
-    public boolean canLeave(Long membershipId, Long userId) {
-
-        Membership membership = membershipRepository.findById(membershipId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Membership not found")
+        Optional<Membership> result = membershipRepository
+                .findByUserIdAndProjectId(
+                        actorId,
+                        membership.getProject().getId()
                 );
 
-        if (!membership.getUser().getId().equals(userId)) {
-            throw new AuthorizationDeniedException("You're not this user with id " + membership.getUser().getId() + " to leave");
+        if (result.isEmpty()) {
+            throw new AuthorizationDeniedException("You're not a member of this project to perform the action!");
         }
 
-        if (membership.getRole().equals(ProjectRole.OWNER)) {
-            throw new AuthorizationDeniedException(
-                    "Owners can't leave the project like that </3"
-            );
+        Membership actorMembership = result.get();
+
+        if (!actorMembership.getStatus().equals(MembershipStatus.ACTIVE) && !actorMembership.getStatus().equals(MembershipStatus.PENDING)) {
+            throw new AuthorizationDeniedException("You're not a valid member of this project to perform the action!");
         }
 
         return true;
