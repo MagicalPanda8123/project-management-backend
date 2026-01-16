@@ -1,10 +1,11 @@
 package org.magicalpanda.projectmanagementbackend.security.config;
 
 import lombok.RequiredArgsConstructor;
-import org.magicalpanda.projectmanagementbackend.security.auth.LocalAuthenticationProvider;
 import org.magicalpanda.projectmanagementbackend.security.handler.RestAccessDeniedHandler;
 import org.magicalpanda.projectmanagementbackend.security.handler.RestAuthenticationEntryPoint;
 import org.magicalpanda.projectmanagementbackend.security.jwt.JwtAuthenticationFilter;
+import org.magicalpanda.projectmanagementbackend.security.oauth.GoogleOidcUserService;
+import org.magicalpanda.projectmanagementbackend.security.oauth.Oauth2LoginSuccessHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -26,7 +27,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter  jwtAuthenticationFilter;
-//    private final LocalAuthenticationProvider localAuthenticationProvider;
+    private final GoogleOidcUserService googleOidcUserService;
+    private final Oauth2LoginSuccessHandler oauth2LoginSuccessHandler;
 
     @Bean
     public SecurityFilterChain  securityFilterChain(HttpSecurity http, RestAuthenticationEntryPoint restAuthenticationEntryPoint, RestAccessDeniedHandler restAccessDeniedHandler) throws Exception {
@@ -41,6 +43,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/auth/**",
+                                "/oauth2/**",
                                 "/error"
                         ).permitAll()
                         .anyRequest().authenticated()
@@ -51,8 +54,13 @@ public class SecurityConfig {
                         .authenticationEntryPoint(restAuthenticationEntryPoint)
                         .accessDeniedHandler(restAccessDeniedHandler))
 
-                // Authentication provider
-//                .authenticationProvider(localAuthenticationProvider)
+                // OAuth2 login (with OIDC)
+                .oauth2Login(oauth -> oauth
+                        .userInfoEndpoint(userInfo ->
+                                userInfo.oidcUserService(googleOidcUserService)
+                        )
+                        .successHandler(oauth2LoginSuccessHandler)
+                )
 
                 // JWT filter
                 .addFilterBefore(
