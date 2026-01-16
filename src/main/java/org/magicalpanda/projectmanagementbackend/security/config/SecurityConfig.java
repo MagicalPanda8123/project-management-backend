@@ -1,15 +1,13 @@
 package org.magicalpanda.projectmanagementbackend.security.config;
 
 import lombok.RequiredArgsConstructor;
+import org.magicalpanda.projectmanagementbackend.security.auth.LocalAuthenticationProvider;
 import org.magicalpanda.projectmanagementbackend.security.handler.RestAccessDeniedHandler;
 import org.magicalpanda.projectmanagementbackend.security.handler.RestAuthenticationEntryPoint;
 import org.magicalpanda.projectmanagementbackend.security.jwt.JwtAuthenticationFilter;
-import org.magicalpanda.projectmanagementbackend.security.user.CustomUserDetailsSerivce;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.AuthenticationProvider;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -27,8 +25,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final CustomUserDetailsSerivce customUserDetailsSerivce;
     private final JwtAuthenticationFilter  jwtAuthenticationFilter;
+//    private final LocalAuthenticationProvider localAuthenticationProvider;
 
     @Bean
     public SecurityFilterChain  securityFilterChain(HttpSecurity http, RestAuthenticationEntryPoint restAuthenticationEntryPoint, RestAccessDeniedHandler restAccessDeniedHandler) throws Exception {
@@ -54,7 +52,7 @@ public class SecurityConfig {
                         .accessDeniedHandler(restAccessDeniedHandler))
 
                 // Authentication provider
-                .authenticationProvider(authenticationProvider())
+//                .authenticationProvider(localAuthenticationProvider)
 
                 // JWT filter
                 .addFilterBefore(
@@ -68,16 +66,6 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
-    }
-
-    @Bean
-    public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider provider =
-                new DaoAuthenticationProvider(customUserDetailsSerivce);
-
-        provider.setPasswordEncoder(passwordEncoder());
-
-        return provider;
     }
 
     @Bean

@@ -8,12 +8,15 @@ import org.magicalpanda.projectmanagementbackend.dto.response.LoginResponse;
 import org.magicalpanda.projectmanagementbackend.exception.ResourceAlreadyExistsException;
 import org.magicalpanda.projectmanagementbackend.exception.ResourceNotFoundException;
 import org.magicalpanda.projectmanagementbackend.exception.VerificationCodeException;
+import org.magicalpanda.projectmanagementbackend.model.AuthIdentity;
 import org.magicalpanda.projectmanagementbackend.model.RefreshToken;
 import org.magicalpanda.projectmanagementbackend.model.User;
 import org.magicalpanda.projectmanagementbackend.model.VerificationCode;
+import org.magicalpanda.projectmanagementbackend.model.enumeration.AuthProvider;
 import org.magicalpanda.projectmanagementbackend.model.enumeration.Role;
 import org.magicalpanda.projectmanagementbackend.model.enumeration.VerificationPurpose;
 import org.magicalpanda.projectmanagementbackend.proxy.EmailProxy;
+import org.magicalpanda.projectmanagementbackend.repository.AuthIdentityRepository;
 import org.magicalpanda.projectmanagementbackend.repository.RefreshTokenRepository;
 import org.magicalpanda.projectmanagementbackend.repository.UserRepository;
 import org.magicalpanda.projectmanagementbackend.repository.VerificationCodeRepository;
@@ -36,6 +39,7 @@ import java.util.Random;
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final AuthIdentityRepository authIdentityRepository;
     private final VerificationCodeRepository verificationCodeRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final AuthenticationManager authenticationManager;
@@ -45,7 +49,7 @@ public class AuthService {
 
     public User register(RegisterRequest request){
 
-        // 1. Enforce uniqueness
+        // 1. Enforce User-level uniqueness
         if (userRepository.existsByEmail(request.getEmail())){
             throw new ResourceAlreadyExistsException(
                     "User",
@@ -62,11 +66,22 @@ public class AuthService {
             );
         }
 
+        // Enforce AuthIdentity-level uniqueness (LOCAL as provider)
+        if (authIdentityRepository.existsByProviderAndProviderUserId(
+                AuthProvider.LOCAL,
+                request.getUsername()
+        )) {
+            throw new ResourceAlreadyExistsException(
+                    "AuthIdentity",
+                    "username",
+                    request.getUsername()
+            );
+        }
+
         // 2. Create user
         User user = User.builder()
                 .email(request.getEmail())
                 .username(request.getUsername())
-                .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
                 .isEmailVerified(false)
@@ -74,6 +89,16 @@ public class AuthService {
                 .build();
 
         userRepository.save(user);
+
+        // Create LOCAL AuthIdentity
+        AuthIdentity localIdentity = AuthIdentity.builder()
+                .provider(AuthProvider.LOCAL)
+                .providerUserId(request.getUsername())
+                .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .user(user)
+                .build();
+
+        authIdentityRepository.save(localIdentity);
 
         // 3. Generate email verification code
         VerificationCode verificationCode = createEmailVerificationCode(user);
