@@ -41,11 +41,19 @@ public class SecurityConfig {
 
                 // Authorization rules
                 .authorizeHttpRequests(auth -> auth
+                        // Public auth endpoints
                         .requestMatchers(
-                                "/api/auth/**",
+                                "/api/auth/login",
+                                "/api/auth/register",
+                                "/api/auth/refresh",
                                 "/oauth2/**",
                                 "/error"
                         ).permitAll()
+
+                        // Logout requires a valid access token
+                        .requestMatchers("/api/auth/logout").authenticated()
+
+                        // Everything else
                         .anyRequest().authenticated()
                 )
 

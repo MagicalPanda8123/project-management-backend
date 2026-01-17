@@ -31,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Date;
 import java.util.Random;
 
 @Service
@@ -45,6 +46,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final TokenBlacklistService tokenBlacklistService;
     private final EmailProxy emailProxy;
 
     public User register(RegisterRequest request){
@@ -209,7 +211,7 @@ public class AuthService {
 
     }
 
-    public void logout(LogoutRequest request) {
+    public void logout(LogoutRequest request, String authHeader) {
         String token = request.getRefreshToken();
 
         // 1. Validate & retrieve claims from token
@@ -225,6 +227,27 @@ public class AuthService {
         if (!storedToken.isRevoked()) {
             storedToken.setRevoked(true);
             refreshTokenRepository.save(storedToken);
+        }
+
+        // 4. Blacklist the access token (for immediate access cut)
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new JwtException("Missing or invalid Authorization header");
+        }
+
+        String accessToken = authHeader.substring(7);
+        Claims accessClaims = jwtService.validateAccessToken(accessToken);
+
+        String accessJti =accessClaims.get("jti", String.class);
+        Date expiresAt = accessClaims.getExpiration();
+
+        Duration ttl = Duration.between(
+                Instant.now(),
+                expiresAt.toInstant()
+        );
+
+        // Only blacklist if the access token hasn't expired yet
+        if (!ttl.isNegative()) {
+            tokenBlacklistService.blacklist(accessJti, ttl);
         }
     }
 
