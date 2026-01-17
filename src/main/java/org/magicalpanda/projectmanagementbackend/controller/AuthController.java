@@ -9,10 +9,7 @@ import org.magicalpanda.projectmanagementbackend.model.User;
 import org.magicalpanda.projectmanagementbackend.service.AuthService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -58,9 +55,10 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(
-            @Valid @RequestBody LogoutRequest request
+            @Valid @RequestBody LogoutRequest request,
+            @RequestHeader("Authorization") String authHeader
     ) {
-        authService.logout(request);
+        authService.logout(request, authHeader);
         return ResponseEntity.noContent().build();
     }
 }

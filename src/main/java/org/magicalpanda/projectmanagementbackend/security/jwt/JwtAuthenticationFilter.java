@@ -10,6 +10,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.magicalpanda.projectmanagementbackend.model.enumeration.Role;
 import org.magicalpanda.projectmanagementbackend.security.user.SecurityUser;
+import org.magicalpanda.projectmanagementbackend.service.TokenBlacklistService;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,6 +24,7 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Override
     protected void doFilterInternal(
@@ -44,10 +46,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // 1. Validate access token and retrieve claims
             Claims claims = jwtService.validateAccessToken(token);
 
-            // 2. Rebuild SecurityUser
+            // 2. Blacklist check
+            String jti = claims.get("jti", String.class);
+            if (tokenBlacklistService.isBlacklisted(jti)) {
+                SecurityContextHolder.clearContext();
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                return;
+            }
+
+            // 3. Rebuild SecurityUser
             SecurityUser principal = buildPrincipal(claims);
 
-            // 3. Create Authentication
+            // 4. Create Authentication
             Authentication authentication =
                     new UsernamePasswordAuthenticationToken(
                             principal,
@@ -55,7 +65,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             principal.getAuthorities()
                     );
 
-            // 4. Populate SecurityContext
+            // 5. Populate SecurityContext
             SecurityContextHolder.getContext()
                     .setAuthentication(authentication);
 

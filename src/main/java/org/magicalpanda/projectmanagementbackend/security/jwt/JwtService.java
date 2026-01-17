@@ -47,17 +47,18 @@ public class JwtService {
     public String generateAccessToken(SecurityUser user) {
 
         Instant now = Instant.now();
+        Instant expiresAt = now.plusSeconds(accessTokenExpirationSeconds);
+        String jti = UUID.randomUUID().toString();
 
         return Jwts.builder()
                 .subject(user.getId().toString())
+                .claim("jti", jti)
                 .claim("username", user.getUsername())
                 .claim("email", user.getEmail())
                 .claim("role", user.getRole())
                 .claim("token_type", TokenType.ACCESS_TOKEN.name())
                 .issuedAt(Date.from(now))
-                .expiration(
-                        Date.from(now.plusSeconds(accessTokenExpirationSeconds))
-                )
+                .expiration(Date.from(expiresAt))
                 .signWith(signingKey)
                 .compact();
     }
